@@ -1,0 +1,57 @@
+// _theme.scss
+$blue-600: #EAB308;
+$active-bg: rgba(37, 99, 235, 0.05);
+
+:root {
+  --brand-primary: #{$blue-600};
+  --brand-secondary: #{$blue-600};
+  --sidebar-active-bg: #{$active-bg};
+}
+
+:export {
+  brandBlue: $blue-600;
+  activeBg: $active-bg;
+}
+
+.theme-container,
+.sidebar-container {
+  .sidebar-active-text,
+  .text-brand-primary {
+    color: var(--brand-primary) !important;
+  }
+
+  .sidebar-active-line {
+    background-color: var(--brand-primary);
+  }
+  
+  .bg-brand-secondary {
+    background-color: var(--brand-secondary) !important;
+  }
+
+  .hover-bg-soft:hover {
+    background-color: #f1f1f1 !important;
+  }
+
+  input[type="checkbox"] {
+    accent-color: var(--brand-primary);
+    cursor: pointer;
+
+    &:hover {
+      filter: brightness(0.9);
+    }
+  }
+
+  .dropdown-item-custom {
+    transition: all 0.2s ease;
+    cursor: pointer;
+
+    &:hover {
+      background-color: #f1f1f1 !important;
+    }
+
+    &.active {
+      color: var(--brand-primary) !important;
+      font-weight: 600;
+    }
+  }
+}
