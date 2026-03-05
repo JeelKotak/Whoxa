@@ -1,184 +1,361 @@
-import { useState, useEffect, useRef, type ChangeEvent } from 'react';
-import {  X } from 'lucide-react';
-import { useBranding } from '../Components/BrandingContext';
-import '../Components/_theme.scss';
+"use client";
+
+import {
+  useState,
+  useEffect,
+  useRef,
+  type ChangeEvent,
+  useCallback,
+} from "react";
+import { X } from "lucide-react";
+import { useBranding } from "../Components/BrandingContext";
+import useApi from "../hooks/useApiPost";
+import "../Components/_theme.scss";
+import toast, { Toaster } from 'react-hot-toast';
+
+
+/* ============================= */
+/* 🔹 Types */
+/* ============================= */
+
+interface ConfigType {
+  app_name: string;
+  app_email: string;
+  app_primary_color: string;
+  app_logo_light: string;
+  web_logo_light: string;
+  app_logo_dark: string;
+  copyright_text: string;
+}
+
+interface ImageState {
+  file: File | null;
+  preview: string | null;
+}
+
+interface ImageUploadProps {
+  label: string;
+  preview: string | null;
+  inputRef: React.RefObject<HTMLInputElement>;
+  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  onRemove: () => void;
+  fullWidth?: boolean;
+}
+
+interface InputFieldProps {
+  label: string;
+  value: string;
+  onChange?: (e: ChangeEvent<HTMLInputElement>) => void;
+  readOnly?: boolean;
+}
+
+/* ============================= */
+/* 🔹 Component */
+/* ============================= */
 
 export default function GeneralSettings() {
-    const { updateLogo, updateSiteName } = useBranding();
+  const { updateLogo, updateSiteName } = useBranding();
+  const { get, put, loading } = useApi();
 
-    const [platformName, setPlatformName] = useState<string>("Whoxa Chat");
-    const [themeColor, setThemeColor] = useState<string>("#EAB308");
+  const [config, setConfig] = useState<ConfigType | null>(null);
+  const [platformName, setPlatformName] = useState("");
+ const [copyright_text, setCopyrightText] = useState("");
+    const [app_email, setAppEmail] = useState("");
 
-    const [logo, setLogo] = useState<{ file: File | null; preview: string | null }>({ file: null, preview: "./Images/Logo.png" });
-    const [footerLogo, setFooterLogo] = useState<{ file: File | null; preview: string | null }>({ file: null, preview: "./Images/Logo.png" });
-    const [favicon, setFavicon] = useState<{ file: File | null; preview: string | null }>({ file: null, preview: "./Images/Logo.png" });
+  const [themeColor, setThemeColor] = useState("#EAB308");
 
-    const logoInput = useRef<HTMLInputElement>(null);
-    const footerInput = useRef<HTMLInputElement>(null);
-    const faviconInput = useRef<HTMLInputElement>(null);
+  const [logo, setLogo] = useState<ImageState>({ file: null, preview: null });
+  const [footerLogo, setFooterLogo] = useState<ImageState>({
+    file: null,
+    preview: null,
+  });
+  const [favicon, setFavicon] = useState<ImageState>({
+    file: null,
+    preview: null,
+  });
 
-    useEffect(() => {
-        const root = document.documentElement;
-        root.style.setProperty('--brand-primary', themeColor);
-        root.style.setProperty('--brand-secondary', themeColor);
-        root.style.setProperty('--sidebar-active-bg', `${themeColor}1a`);
+  const logoInput = useRef<HTMLInputElement>(null);
+  const footerInput = useRef<HTMLInputElement>(null);
+  const faviconInput = useRef<HTMLInputElement>(null);
 
-        updateLogo(logo.preview || "");
-        updateSiteName(platformName);
-    }, [themeColor, logo.preview, platformName, updateLogo, updateSiteName]);
+  /* ============================= */
+  /* 🔹 Fetch Config */
+  /* ============================= */
 
-    const handleFileChange = (e: ChangeEvent<HTMLInputElement>, type: 'logo' | 'footer' | 'favicon') => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+  const fetchConfig = useCallback(async () => {
+    try {
+      const res = await get("/config/");
+      if (res?.status) {
+        setConfig(res.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch config", error);
+    }
+  }, []);
 
-        const previewUrl = URL.createObjectURL(file);
-        const data = { file, preview: previewUrl };
+  useEffect(() => {
+    fetchConfig();
+  }, [fetchConfig]);
 
-        if (type === 'logo') setLogo(data);
-        else if (type === 'footer') setFooterLogo(data);
-        else setFavicon(data);
-    };
+  /* ============================= */
+  /* 🔹 Sync API Data */
+  /* ============================= */
 
-    const removeImage = (type: 'logo' | 'footer' | 'favicon') => {
-        if (type === 'logo') {
-            if (logo.preview?.startsWith('blob:')) URL.revokeObjectURL(logo.preview);
-            setLogo({ file: null, preview: null });
-            if (logoInput.current) logoInput.current.value = "";
-        } else if (type === 'footer') {
-            if (footerLogo.preview?.startsWith('blob:')) URL.revokeObjectURL(footerLogo.preview);
-            setFooterLogo({ file: null, preview: null });
-            if (footerInput.current) footerInput.current.value = "";
-        } else {
-            if (favicon.preview?.startsWith('blob:')) URL.revokeObjectURL(favicon.preview);
-            setFavicon({ file: null, preview: null });
-            if (faviconInput.current) faviconInput.current.value = "";
-        }
-    };
+  useEffect(() => {
+    if (!config) return;
 
+    setPlatformName(config.app_name || "");
+    setThemeColor(config.app_primary_color || "#EAB308");
+    setAppEmail(config.app_email || "");
+    setCopyrightText(config.copyright_text || "");
+
+
+    setLogo({ file: null, preview: config.app_logo_light || null });
+    setFooterLogo({ file: null, preview: config.web_logo_light || null });
+    setFavicon({ file: null, preview: config.app_logo_dark || null });
+  }, [config]);
+
+  /* ============================= */
+  /* 🔹 Branding Sync */
+  /* ============================= */
+
+  useEffect(() => {
+    const root = document.documentElement;
+
+    root.style.setProperty("--brand-primary", themeColor);
+    root.style.setProperty("--brand-secondary", themeColor);
+    root.style.setProperty("--sidebar-active-bg", `${themeColor}1a`);
+
+    updateLogo(logo.preview || "");
+    updateSiteName(platformName);
+  }, [themeColor, logo.preview, platformName, updateLogo, updateSiteName]);
+
+  /* ============================= */
+  /* 🔹 File Handlers */
+  /* ============================= */
+
+  const handleFileChange = (
+    e: ChangeEvent<HTMLInputElement>,
+    setter: React.Dispatch<React.SetStateAction<ImageState>>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const previewUrl = URL.createObjectURL(file);
+    setter({ file, preview: previewUrl });
+  };
+
+  const removeImage = (
+    state: ImageState,
+    setter: React.Dispatch<React.SetStateAction<ImageState>>,
+    ref: React.RefObject<HTMLInputElement>
+  ) => {
+    if (state.preview?.startsWith("blob:")) {
+      URL.revokeObjectURL(state.preview);
+    }
+
+    setter({ file: null, preview: null });
+
+    if (ref.current) ref.current.value = "";
+  };
+
+  /* ============================= */
+  /* 🔹 Save Handler */
+  /* ============================= */
+
+const handleSave = async () => {
+  try {
+    const formData = new FormData();
+
+    formData.append("app_name", platformName);
+    formData.append("app_primary_color", themeColor);
+    formData.append("copyright_text", copyright_text || "");
+    formData.append("app_email", app_email || "");
+
+    if (logo.file) {
+      formData.append("app_logo_light", logo.file);
+    }
+
+    if (footerLogo.file) {
+      formData.append("web_logo_light", footerLogo.file);
+    }
+
+    if (favicon.file) {
+      formData.append("app_logo_dark", favicon.file);
+    }
+
+
+    // ✅ Do NOT manually set Content-Type for FormData
+  const res = await put("/config", formData, {
+  headers: {
+    "Content-Type": "multipart/form-data",
+  },
+});
+
+    if (res?.status) {
+      await fetchConfig();
+      toast.success("Settings updated successfully ✅");
+    }
+  } catch (error) {
+    console.error("Update failed", error);
+    toast.error("Failed to update settings ❌");
+  }
+};
+
+  /* ============================= */
+  /* 🔹 Loading */
+  /* ============================= */
+
+  if (loading && !config) {
     return (
-        <div className="space-y-8 animate-in fade-in duration-500 theme-container">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-
-                {/* Main Logo */}
-                <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700">Logo</label>
-                    <input 
-                        ref={logoInput}
-                        type="file" 
-                        onChange={(e) => handleFileChange(e, 'logo')}
-                        className="w-full text-sm text-gray-500 border border-gray-200 rounded-md p-2 file:mr-4 file:py-1 file:px-2 file:rounded-md file:border file:border-gray-400 file:text-sm file:font-semibold file:text-gray-600" 
-                    />
-                    {logo.preview && (
-                        <div className="mt-2 relative inline-block p-2 rounded-lg ">
-                            <img src={logo.preview} alt="Logo" className="h-10 object-contain" />
-                            <button 
-                                onClick={() => removeImage('logo')}
-                                className="absolute -top-1 -right-2 bg-red-500 text-white rounded-full p-0.5 "
-                            >
-                                <X size={14} />
-                            </button>
-                        </div>
-                    )}
-                </div>
-
-                {/* Footer Logo */}
-                <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700">Footer Logo</label>
-                    <input 
-                        ref={footerInput}
-                        type="file" 
-                        onChange={(e) => handleFileChange(e, 'footer')}
-                        className="w-full text-sm text-gray-500 border border-gray-200 rounded-md p-2 file:mr-4 file:py-1 file:px-2 file:rounded-md file:border file:border-gray-400 file:text-sm file:font-semibold file:text-gray-600" 
-                    />
-                    {footerLogo.preview && (
-                        <div className="mt-2 relative inline-block p-2 rounded-lg">
-                            <img src={footerLogo.preview} alt="Footer Logo" className="h-10 object-contain" />
-                            <button 
-                                onClick={() => removeImage('footer')}
-                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5"
-                            >
-                                <X size={14} />
-                            </button>
-                        </div>
-                    )}
-                </div>
-
-                {/* Fav Icon */}
-                <div className="space-y-2 col-span-1 md:col-span-2">
-                    <label className="text-sm font-semibold text-gray-700">Fav Icon</label>
-                    <input 
-                        ref={faviconInput}
-                        type="file" 
-                        onChange={(e) => handleFileChange(e, 'favicon')}
-                        className="w-full text-sm text-gray-500 border border-gray-200 rounded-md p-2 file:mr-4 file:py-1 file:px-2 file:rounded-md file:border file:border-gray-400 file:text-sm file:font-semibold file:text-gray-600" 
-                    />
-                    {favicon.preview && (
-                        <div className="mt-2 relative inline-block p-2 rounded-lg">
-                            <img src={favicon.preview} alt="Favicon" className="h-10 object-contain" />
-                            <button 
-                                onClick={() => removeImage('favicon')}
-                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5"
-                            >
-                                <X size={14} />
-                            </button>
-                        </div>
-                    )}
-                </div>
-
-                {/* Platform Name */}
-                <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700">Name</label>
-                    <input
-                        type="text"
-                        value={platformName}
-                        onChange={(e) => setPlatformName(e.target.value)}
-                        className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[var(--brand-primary)] outline-none transition-all"
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700">Copyright Text</label>
-                    <input
-                        type="text"
-                        defaultValue="Copyright 2025 © HandyHue theme by Primocys"
-                        className="w-full p-2.5 border border-gray-200 rounded-lg outline-none bg-gray-50 text-gray-600 cursor-not-allowed"
-                        readOnly
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700">Contact E-Mail</label>
-                    <input
-                        type="text"
-                        defaultValue="info.primocys@gmail.com"
-                        className="w-full p-2.5 border border-gray-200 rounded-lg outline-none bg-gray-50 text-gray-600 cursor-not-allowed"
-                        readOnly
-                    />
-                </div>
-            </div>
-
-            {/* Color Settings Bar */}
-            <div className="mt-10 space-y-3">
-                <label className="text-sm font-semibold text-gray-700">Color Settings</label>
-                <div className="relative w-20 p-1 bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden group focus-within:ring-2 focus-within:ring-[var(--brand-primary)]">
-                    <div
-                        className="w-full h-8 rounded-lg transition-all duration-300 group-hover:opacity-90"
-                        style={{ backgroundColor: themeColor }}
-                    />
-                    <input
-                        type="color"
-                        value={themeColor}
-                        onChange={(e) => setThemeColor(e.target.value)}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    />
-                </div>
-            </div>
-
-            <div className="mt-8">
-                <button className="bg-brand-secondary text-white px-10 py-3 rounded-xl font-semibold hover:brightness-110 active:scale-95 transition-all">
-                    Submit
-                </button>
-            </div>
-        </div>
+      <div className="p-10 text-center text-gray-400">
+        Loading settings...
+      </div>
     );
+  }
+
+  /* ============================= */
+  /* 🔹 UI */
+  /* ============================= */
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500 theme-container">
+                        <Toaster position="top-center" reverseOrder={false} />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+        <ImageUpload
+          label="Logo"
+          preview={logo.preview}
+          inputRef={logoInput}
+          onChange={(e) => handleFileChange(e, setLogo)}
+          onRemove={() => removeImage(logo, setLogo, logoInput)}
+        />
+
+        <ImageUpload
+          label="Footer Logo"
+          preview={footerLogo.preview}
+          inputRef={footerInput}
+          onChange={(e) => handleFileChange(e, setFooterLogo)}
+          onRemove={() => removeImage(footerLogo, setFooterLogo, footerInput)}
+        />
+
+        <ImageUpload
+          label="Fav Icon"
+          preview={favicon.preview}
+          inputRef={faviconInput}
+          onChange={(e) => handleFileChange(e, setFavicon)}
+          onRemove={() => removeImage(favicon, setFavicon, faviconInput)}
+          fullWidth
+        />
+
+        <InputField
+          label="Platform Name"
+          value={platformName}
+          onChange={(e) => setPlatformName(e.target.value)}
+        />
+
+        <InputField
+          label="Copyright Text"
+          value={copyright_text}
+          onChange={(e)=>setCopyrightText(e.target.value)}
+        />
+
+        <InputField
+          label="Contact Email"
+          value={app_email}
+          onChange={(e)=>setAppEmail(e.target.value)}
+        />
+      </div>
+
+      <div className="mt-10 space-y-3">
+        <label className="text-sm font-semibold text-gray-700">
+          Color Settings
+        </label>
+
+        <div className="relative w-20 p-1 bg-white border border-gray-200 rounded-xl shadow-sm">
+          <div
+            className="w-full h-8 rounded-lg"
+            style={{ backgroundColor: themeColor }}
+          />
+          <input
+            type="color"
+            value={themeColor}
+            onChange={(e) => setThemeColor(e.target.value)}
+            className="absolute inset-0 opacity-0 cursor-pointer"
+          />
+        </div>
+      </div>
+
+      <div className="mt-8">
+        <button
+          onClick={handleSave}
+          disabled={loading}
+          className="bg-brand-secondary text-white px-10 py-3 rounded-xl font-semibold hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? "Saving..." : "Save Changes"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ============================= */
+/* 🔹 Reusable Components */
+/* ============================= */
+
+function ImageUpload({
+  label,
+  preview,
+  inputRef,
+  onChange,
+  onRemove,
+  fullWidth = false,
+}: ImageUploadProps) {
+  return (
+    <div className={`space-y-2 ${fullWidth ? "col-span-1 md:col-span-2" : ""}`}>
+      <label className="text-sm font-semibold text-gray-700">{label}</label>
+
+      <input
+        ref={inputRef}
+        type="file"
+        onChange={onChange}
+        className="w-full text-sm text-gray-500 border border-gray-200 rounded-md p-2"
+      />
+
+      {preview && (
+        <div className="mt-2 relative inline-block p-2">
+          <img src={preview} alt={label} className="h-10 object-contain" />
+          <button
+            onClick={onRemove}
+            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InputField({
+  label,
+  value,
+  onChange,
+  readOnly = false,
+}: InputFieldProps) {
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-semibold text-gray-700">{label}</label>
+
+      <input
+        type="text"
+        value={value}
+        onChange={onChange}
+        readOnly={readOnly}
+        className={`w-full p-2.5 border border-gray-200 rounded-lg outline-none ${
+          readOnly ? "bg-gray-50 text-gray-600 cursor-not-allowed" : ""
+        }`}
+      />
+    </div>
+  );
 }

@@ -10,13 +10,16 @@ interface PagesReusableProps {
   initialDate?: string;
   initialContent?: string;
   onUpdate?: (data: { title: string; content: string }) => void;
+  saving?: boolean;
 }
 
 const PagesReusable: React.FC<PagesReusableProps> = ({ 
   initialTitle = "Privacy Policy", 
   initialDate = "04, Oct 2024",
   initialContent = "",
-  onUpdate 
+  onUpdate ,
+    saving = false
+
 }) => {
   const [title, setTitle] = useState<string>(initialTitle);
   const [isEditingHeader, setIsEditingHeader] = useState<boolean>(false);
@@ -174,14 +177,18 @@ const PagesReusable: React.FC<PagesReusableProps> = ({
         </div>
       </div>
 
-      <div className="flex justify-start">
-        <button 
-          onClick={handleUpdate}
-          className="bg-brand-secondary text-white font-medium py-2.5 px-10 rounded-lg "
-        >
-          Save Changes
-        </button>
-      </div>
+     <div className="flex justify-start">
+  <button
+    onClick={handleUpdate}
+    disabled={saving}
+    className="bg-brand-secondary text-white font-medium py-2.5 px-10 rounded-lg flex items-center gap-2 disabled:opacity-60"
+  >
+    {saving && (
+      <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+    )}
+    {saving ? "Saving..." : "Save Changes"}
+  </button>
+</div>
 
       <style>{`
         .ProseMirror {

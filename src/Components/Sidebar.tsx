@@ -80,7 +80,7 @@ export default function SideBar({ isSearchOpen }: SideBarProps) {
                     icon: CircleUser,
                     children: [
                         { name: 'Avatar List', path: '/avatar-list' },
-                        { name: 'Add Avatar', path: '/avatar-add' }, // Path empty as it triggers modal
+                        { name: 'Add Avatar', path: '/avatar-add' }, 
                     ]
                 },
             ]

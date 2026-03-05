@@ -42,7 +42,8 @@ export const AvatarForm: React.FC<AvatarForProps> = ({
                 {label} {required && <span className="text-rose-500">*</span>}
             </label>
 
-            <div className="relative group">
+            <div className="relative group cursor-pointer"                     onClick={() => fileInputRef.current?.click()}
+>
                 <div className="w-28 h-28 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden">
                     {preview ? (
                         <img src={preview} alt="Preview" className="w-full h-full object-cover" />

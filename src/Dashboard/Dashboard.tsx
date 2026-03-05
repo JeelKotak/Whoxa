@@ -8,41 +8,67 @@ import DashboardChartActiveUsers from "./DashboardChartActiveUsers";
 import DashboardChartCountryWise from "./DashboardChartCountryWise";
 import RecentGroups from "./RecentGroups";
 import DashboardChartYearlyLast from "./DashboardChartYearlyLast";
+import useDashboardStats from "../hooks/useDashboardStats";
+import { calculateTrend } from "../utils/calculateTrend";
+import DashboardStatCardSkeleton from "./DashboardStatCardSkeleton";
 
 export default function Dashboard() {
+
+const { stats, loading } = useDashboardStats();
+
+  // 🔹 Show skeleton cards while loading
+  if (loading || !stats) {
+    return (
+      <div className="w-full px-2 py-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <DashboardStatCardSkeleton key={index} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Now stats is guaranteed
+
+  const userTrend = calculateTrend(stats.totalUsers, stats.usersLastMonth);
+  const groupTrend = calculateTrend(stats.totalGroups, stats.groupsLastMonth);
+  const audioTrend = calculateTrend(stats.totalAudioCalls, stats.audioLastMonth);
+  const videoTrend = calculateTrend(stats.totalVideoCalls, stats.videoLastMonth);
+
   const storageData = [
     {
       title: "Total Users",
-      value: "1348",
-      unit: 232,
-      trendValue: "+384%",
-      isNegative: false,
-      iconType: "income" as const
+      value: stats.totalUsers.toLocaleString(),
+      unit: stats.usersLastMonth,
+      trendValue: `${userTrend.percentage}%`,
+      isNegative: userTrend.isNegative,
+      iconType: "income" as const,
     },
     {
       title: "Total Groups",
-      value: "2",
-      unit: 2,
-      trendValue: "-100%",
-      isNegative: true,
-      iconType: "orders" as const
+      value: stats.totalGroups.toLocaleString(),
+      unit: stats.groupsLastMonth,
+      trendValue: `${groupTrend.percentage}%`,
+      isNegative: groupTrend.isNegative,
+      iconType: "orders" as const,
     },
     {
-      title: "Total Audio calls",
-      value: "4",
-      unit: 0,
-      trendValue: "0%",
-      isNegative: false,
-      iconType: "profit" as const
+      title: "Total Audio Calls",
+      value: stats.totalAudioCalls.toLocaleString(),
+      unit: stats.audioLastMonth,
+      trendValue: `${audioTrend.percentage}%`,
+      isNegative: audioTrend.isNegative,
+      iconType: "profit" as const,
     },
     {
-      title: "Total Video calls",
-      value: "2",
-      unit: 0,
-      trendValue: "0%",
-      isNegative: false,
-      iconType: "expense" as const
-    }
+      title: "Total Video Calls",
+      value: stats.totalVideoCalls.toLocaleString(),
+      unit: stats.videoLastMonth,
+      trendValue: `${videoTrend.percentage}%`,
+      isNegative: videoTrend.isNegative,
+      iconType: "expense" as const,
+    },
   ];
 
   return (

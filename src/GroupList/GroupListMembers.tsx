@@ -25,11 +25,14 @@ interface GroupListMembersProps {
 export default function GroupListMembers({ group, onClose }: GroupListMembersProps) {
   const isOpen = Boolean(group);
 
+  console.log("groupgroupgroupgroup" , group)
+
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={group ? `${group.name}` : ""}
+      title={group ? `${group.group_name}` : ""}
     >
       <div className="space-y-3">
         {group?.members.map((member, index) => (

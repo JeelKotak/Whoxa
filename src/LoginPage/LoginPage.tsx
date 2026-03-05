@@ -2,45 +2,97 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
-
+import Cookies from 'js-cookie';
+import useApi from '../hooks/useApiPost';
 export default function LoginPage() {
+
+
     const navigate = useNavigate();
-    const [showPassword, setShowPassword] = useState(false);
-    const [, setCopied] = useState(false);
+  const { post, loading } = useApi(); // ✅ use global api hook
 
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-    const demoEmail = "demo@whoxa.com";
-    const demoPassword = "Admin@123?";
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
 
-    const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        
-        if (email === demoEmail && password === demoPassword) {
-            setTimeout(() => navigate('/dashboard'), 1000);
-        } else if (!email || !password) {
-            toast.error('Please enter both email and password.');
-        } else {
-            toast.error('Invalid credentials. Try using the autofill.');
-        }
-    };
+  const demoEmail = "demo@whoxa.com";
+  const demoPassword = "Admin@123?";
 
-    const handleCopy = async () => {
-        setEmail(demoEmail);
-        setPassword(demoPassword);
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
 
-        try {
-            const textToCopy = `Email: ${demoEmail}\nPassword: ${demoPassword}`;
-            await navigator.clipboard.writeText(textToCopy);
-            toast.success('Credentials copied and filled!');
-        } catch (err) {
-            console.warn("Clipboard access denied.");
-        }
+    if (!email.trim() || !password.trim()) {
+      toast.error("Please enter both email and password.");
+      return;
+    }
 
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
+    try {
+      const response = await post("/admin/login", {
+        email,
+        password,
+      });
+
+      // 🔹 assuming backend returns:
+      // { status: true, message: "", data: { token, ...admin } }
+
+      if (response?.status) {
+        const { token } = response.data;
+
+  console.log("Login successful, token:", token);
+
+        // ✅ Store token
+        Cookies.set("whoxaauth", token);
+        toast.success(response.message || "Login successful!");
+
+        navigate("/dashboard");
+      } else {
+        toast.error(response?.message || "Login failed");
+      }
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message || "Something went wrong"
+      );
+    }
+  };
+
+
+
+
+  const handleCopy = async () => {
+  const credentials = `Email: ${demoEmail}\nPassword: ${demoPassword}`;
+
+  // Fill input fields
+  setEmail(demoEmail);
+  setPassword(demoPassword);
+
+  try {
+    // Modern Clipboard API
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(credentials);
+    } else {
+      // Fallback for older browsers / insecure context
+      const textArea = document.createElement("textarea");
+      textArea.value = credentials;
+      textArea.style.position = "fixed";
+      textArea.style.opacity = "0";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+    }
+
+    toast.success("Credentials copied and filled!");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+
+  } catch (error) {
+    console.error("Copy failed:", error);
+    toast.error("Failed to copy credentials.");
+  }
+};
+
 
     return ( 
         <div className="min-h-screen flex items-center justify-center px-4 xl:py-4">

@@ -1,4 +1,5 @@
 import { LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface SignOutProps {
     onClose: () => void;
@@ -6,6 +7,24 @@ interface SignOutProps {
 }
 
 export default function SignOutModal({ onClose, onConfirm }: SignOutProps) {
+
+    const navigate = useNavigate();
+
+const handleLogout = () => {
+  // Remove token
+  Cookies.remove("whoxaauth");
+
+  // Optional: clear other data
+  localStorage.clear();
+  sessionStorage.clear();
+
+  // Redirect to login
+  navigate("/", { replace: true });
+
+  // Optional: reload app (extra safe)
+  // window.location.href = "/";
+};
+
     return (
         <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40 theme-container">
             <div className="bg-white rounded-xl p-9 max-w-[480px] w-full mx-4 shadow-xl flex flex-col items-center text-center animate-in fade-in zoom-in duration-200">

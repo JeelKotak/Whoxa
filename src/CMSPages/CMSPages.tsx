@@ -1,83 +1,125 @@
-import { useState, useEffect } from 'react';
-import PagesReusable from '../Components/PagesReusable';
+"use client";
 
-import { PagesPrivacyPolicy } from './PagesPrivacyPolicy';
-import { PagesTermsConditions } from './PagesTermsConditions';
+import { useState, useEffect, useCallback } from "react";
+import PagesReusable from "../Components/PagesReusable";
+import useApi from "../hooks/useApiPost";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function Pages() {
-    const tabs = ['Privacy Policy', 'Terms & Conditions'];
-    const [activeTab, setActiveTab] = useState('Privacy Policy');
-    const [content, setContent] = useState('');
+  const { get, put } = useApi();
 
-    useEffect(() => {
-        const loadPageData = () => {
-            switch (activeTab) {
-                case 'Privacy Policy':
-                    setContent(PagesPrivacyPolicy);
-                    break;
-                case 'Terms & Conditions':
-                    setContent(PagesTermsConditions);
-                    break;
-                default:
-                    setContent('');
-            }
-        };
+  const tabs = ["Privacy Policy", "Terms & Conditions"];
+  const [activeTab, setActiveTab] = useState("Privacy Policy");
+  const [content, setContent] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-        loadPageData();
-    }, [activeTab]);
+  /* ============================= */
+  /* 🔹 Fetch Config */
+  /* ============================= */
 
-    const handleUpdate = (updatedData: { title: string; content: string }) => {
+  const fetchConfig = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await get("/config/");
+
+      if (res?.status && res?.data) {
+        const data = res.data;
+
+        setContent(
+          activeTab === "Privacy Policy"
+            ? data.privacy_policy ?? ""
+            : data.terms_and_conditions ?? ""
+        );
+      }
+    } catch (error) {
+      toast.error("Failed to load page content");
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    fetchConfig();
+  }, [fetchConfig]);
+
+  /* ============================= */
+  /* 🔹 Update Config */
+  /* ============================= */
+
+  const handleUpdate = async (updatedData: {
+    title: string;
+    content: string;
+  }) => {
+    try {
+      setSaving(true);
+
+      const payload =
+        activeTab === "Privacy Policy"
+          ? { privacy_policy: updatedData.content }
+          : { terms_and_conditions: updatedData.content };
+
+      const res = await put("/config", payload);
+
+      if (res?.status) {
+        toast.success(`${activeTab} updated successfully ✅`);
         setContent(updatedData.content);
-        console.log(`Updated ${activeTab}:`, updatedData);
-    };
+      } else {
+        toast.error("Update failed");
+      }
+    } catch (error) {
+      toast.error("Failed to update content ❌");
+    } finally {
+      setSaving(false);
+    }
+  };
 
-    return (
-        <div className="w-full bg-white text-[#111827]">
-            <div className="px-2 pt-4 pb-12">
-                <div className="flex flex-col sm:flex-row justify-between items-start mb-6">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Pages</h1>
-                        <nav className="flex items-center gap-2 text-sm text-black font-medium mt-1">
-                            <a href='/pages' className="text-gray-900">Settings</a>
-                            <span className="w-1.5 h-1.5 bg-gray-200 rounded-full" />
-                            <span className="text-gray-600">CMS Pages</span>
-                        </nav>
-                    </div>
-                </div>
+  return (
+    <div className="w-full bg-white text-[#111827]">
+                          <Toaster position="top-center" reverseOrder={false} />
 
-                <div className="border border-[#e3e3e3]  rounded-md bg-white overflow-hidden">
-                    <div className="px-5 py-4">
-                        <h2 className="text-gray-800 text-lg font-semibold">Pages</h2>
-                    </div>
-                    {/* Tab Navigation */}
-                    <div className="px-6 border-b border-[#e3e3e3]">
-                        <div className="flex gap-8 overflow-x-auto">
-                            {tabs.map((tab) => (
-                                <button
-                                    key={tab}
-                                    onClick={() => setActiveTab(tab)}
-                                    className={`py-4 text-sm font-medium relative whitespace-nowrap ${
-                                        activeTab === tab ? 'text-black' : 'text-gray-500'
-                                    }`}
-                                >
-                                    {tab}
-                                    {activeTab === tab && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-black" />}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+      <div className="px-2 pt-4 pb-12">
 
-                    {/* Content Area */}
-                    <div className='p-2 sm:p-10'>
-                        <PagesReusable
-                            key={activeTab} 
-                            initialTitle={activeTab}
-                            initialContent={content}
-                            onUpdate={handleUpdate}
-                        />
-                    </div>
-                </div>
+        <div className="border border-[#e3e3e3] rounded-md bg-white overflow-hidden">
+
+          {/* Tabs */}
+          <div className="px-6 border-b border-[#e3e3e3]">
+            <div className="flex gap-8 overflow-x-auto">
+              {tabs.map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`py-4 text-sm font-medium relative ${
+                    activeTab === tab ? "text-black" : "text-gray-500"
+                  }`}
+                >
+                  {tab}
+                  {activeTab === tab && (
+                    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-black" />
+                  )}
+                </button>
+              ))}
             </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-2 sm:p-10 relative">
+            {loading ? (
+              <div className="flex justify-center items-center py-20">
+                <div className="h-8 w-8 border-4 border-gray-300 border-t-black rounded-full animate-spin" />
+              </div>
+            ) : (
+              <PagesReusable
+                key={activeTab}
+                initialTitle={activeTab}
+                initialContent={content}
+                onUpdate={handleUpdate}
+                saving={saving}
+              />
+            )}
+          </div>
         </div>
-    );
+      </div>
+    </div>
+  );
 }

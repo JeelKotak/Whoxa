@@ -1,5 +1,5 @@
 import './App.css'
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from './LoginPage/LoginPage'
 import Layout from './layout';
 
@@ -20,54 +20,51 @@ import PushNotificationList from './Notification/PushNotificationList';
 import Settings from './Settings/Settings';
 import CMSPages from './CMSPages/CMSPages';
 import MyProfile from './Profile/MyProfile';
+import Cookies from 'js-cookie';
+import ProtectedRoute from './ProtectedRoute';
 
 function App() {
+
+  const token = Cookies.get("whoxaauth");
+
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<LoginPage />} />
-        <Route  element={<Layout />}>
-        {/* <Route index element={<Navigate to="/dashboard" replace />} /> */}
-          {/* Dashboard */}
-          <Route path="dashboard" element={<Dashboard />} />
 
-          {/* List */}
-          <Route path="report-types-list" element={<ReportTypesList />} />
-          <Route path="user-report-list" element={<UserReportList />} />
-          <Route path="group-report-list" element={<GroupReportList />} />
+        {/* Public Route */}
+        <Route
+          path="/"
+          element={token ? <Navigate to="/dashboard" replace /> : <LoginPage />}
+        />
 
-          <Route path="user-list" element={<UserList />} />
+        {/* Protected Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<Layout />}>
 
-          <Route path="countrywise-user-list" element={<CountryWiseUserList />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="report-types-list" element={<ReportTypesList />} />
+            <Route path="user-report-list" element={<UserReportList />} />
+            <Route path="group-report-list" element={<GroupReportList />} />
+            <Route path="user-list" element={<UserList />} />
+            <Route path="countrywise-user-list" element={<CountryWiseUserList />} />
+            <Route path="group-list" element={<GroupList />} />
+            <Route path="language-list" element={<Language />} />
+            <Route path="translate-language" element={<TranslateLanguage />} />
+            <Route path="block-list" element={<BlockList />} />
+            <Route path="avatar-list" element={<AvatarList />} />
+            <Route path="audio-call-list" element={<AudioCallList />} />
+            <Route path="video-call-list" element={<VideoCallList />} />
+            <Route path="push-notification-list" element={<PushNotificationList />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="cms-pages" element={<CMSPages />} />
+            <Route path="my-profile" element={<MyProfile />} />
 
-          <Route path="group-list" element={<GroupList />} />
-
-          <Route path="language-list" element={<Language />} />
-          <Route path="translate-language" element={<TranslateLanguage />} />
-
-          <Route path="block-list" element={<BlockList />} />
-
-          <Route path="avatar-list" element={<AvatarList />} />
-
-          {/* Calls */}
-          <Route path="audio-call-list" element={<AudioCallList />} />
-
-          <Route path="video-call-list" element={<VideoCallList />} />
-
-          {/* Notifications */}
-          <Route path="push-notification-list" element={<PushNotificationList />} />
-
-          {/* Settings */}
-          <Route path="settings" element={<Settings />} />
-
-          <Route path="cms-pages" element={<CMSPages />} />
-
-          <Route path="my-profile" element={<MyProfile />} />
-
+          </Route>
         </Route>
+
       </Routes>
     </Router>
   )
 }
 
-export default App
+export default App;
