@@ -25,7 +25,7 @@ const Pagination: React.FC<PaginationProps> = ({ page, totalPages, onPageChange 
           {idx > 0 && p - arr[idx - 1] > 1 && <span className="px-2">...</span>}
           <button
             onClick={() => onPageChange(p)}
-            className={`px-3 py-1 rounded-md border text-sm ${page === p ? "bg-yellow-400 text-white border-yellow-400" : "text-gray-700 border-gray-300 hover:bg-gray-100"}`}
+            className={`px-3 py-1 rounded-md border text-sm ${page === p ? " bg-brand-secondary text-white border-yellow-400" : "text-gray-700 border-gray-300 hover:bg-gray-100"}`}
           >
             {p}
           </button>

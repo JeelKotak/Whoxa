@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import '../Components/_theme.scss';
 import { useEditor, EditorContent } from '@tiptap/react';
@@ -17,10 +17,20 @@ import {
     Superscript as SuperIcon, Subscript as SubIcon,
     Trash2, Baseline, Highlighter, ChevronDown
 } from 'lucide-react';
+import useApi from '../hooks/useApiPost';
+
+interface Props {
+  profileImageFile: File | null;
+    setProfileImage: (url: string) => void;
+
+}
 
 const MenuBar = ({ editor }: { editor: any }) => {
     const [isAlignOpen, setIsAlignOpen] = useState(false);
     if (!editor) return null;
+
+
+    
 
     const btnClass = (active: boolean) =>
         `p-1.5 rounded transition-colors ${active ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-200'}`;
@@ -127,7 +137,10 @@ const MenuBar = ({ editor }: { editor: any }) => {
     );
 };
 
-export default function MyProfileProfile() {
+
+
+
+export default function MyProfileProfile({ profileImageFile, setProfileImage }: Props) {
     const [formData, setFormData] = useState({
         userName: '',
         firstName: '',
@@ -136,6 +149,9 @@ export default function MyProfileProfile() {
         description: '',
         profileImage: null as File | null,
     });
+
+
+    
 
     const editor = useEditor({
         extensions: [
@@ -165,24 +181,69 @@ export default function MyProfileProfile() {
         },
     });
 
-    const handleCreate = () => {
-        const { userName, firstName, lastName, email, description } = formData;
-        const isDescriptionEmpty = !description || description === '<p></p>';
+    const { put, loading } = useApi();
 
-        if (!userName || !firstName || !lastName || !email || isDescriptionEmpty) {
-            toast.error("Please fill in all mandatory fields.");
-            return;
+    const fetchProfile = async () => {
+  try {
+    const res = await put("/admin");
+
+    const data = res?.data;
+
+    setFormData((prev) => ({
+      ...prev,
+      firstName: data.first_name || "",
+      lastName: data.last_name || "",
+      email: data.email || "",
+      description: data.description || "",
+      preview: data.profile_pic || "",
+    }));
+
+      if (data.profile_pic) {
+      setProfileImage(data.profile_pic);   // ✅ send image to parent
+    }
+
+    
+  } catch (error) {
+    toast.error("Failed to load profile");
+  }
+};
+
+useEffect(() => {
+  fetchProfile();
+}, []);
+
+
+    const handleCreate = async () => {
+  const { firstName, lastName, email } = formData;
+  try {
+    const payload = new FormData();
+
+    payload.append("first_name", firstName);
+    payload.append("last_name", lastName);
+    payload.append("email", email);
+    payload.append("country_code", "+1");
+    payload.append("mobile_num", "");
+
+    if (profileImageFile) {
+      payload.append("pictureType", "profile_pic");
+      payload.append("files", profileImageFile);
+    }
+
+    const res = await put("/admin",
+                payload,
+         {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         }
+    );
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            toast.error("Please enter a valid email address.");
-            return;
-        }
+    toast.success("Profile Updated Successfully!");
 
-        toast.success("Profile Created!");
-        console.log("Submit Data:", formData);
-    };
+  } catch (err: any) {
+    toast.error(err?.response?.data?.message || "Something went wrong");
+  }
+};
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target;
@@ -204,10 +265,7 @@ export default function MyProfileProfile() {
                     </div>
 
                     <div className="md:col-span-2 bg-white space-y-6">
-                        <div className="space-y-2">
-                            <label className="text-sm font-bold text-gray-700">User Name <span className="text-red-500">*</span></label>
-                            <input name="userName" value={formData.userName} onChange={handleChange} placeholder="steveo" className="w-full p-2.5 border border-gray-300 rounded-lg outline-none focus:ring-1 focus:ring-[var(--brand-secondary)] text-sm" />
-                        </div>
+                    
 
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-gray-700">First Name <span className="text-red-500">*</span></label>
@@ -224,13 +282,7 @@ export default function MyProfileProfile() {
                             <input name="email" value={formData.email} onChange={handleChange} placeholder="steve.harrington@gmail.com" className="w-full p-2.5 border border-gray-300 rounded-lg outline-none focus:ring-1 focus:ring-[var(--brand-secondary)] text-sm" />
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-sm font-bold text-gray-700">Description <span className="text-red-500">*</span></label>
-                            <div className="border border-gray-300 rounded-lg overflow-hidden focus-within:ring-1 focus-within:ring-blue-500">
-                                <MenuBar editor={editor} />
-                                <EditorContent editor={editor} />
-                            </div>
-                        </div>
+                    
                     </div>
                 </section>
             </div>

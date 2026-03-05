@@ -24,7 +24,7 @@ export default function UserList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { post } = useApi();
+  const { post , put } = useApi();
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -91,9 +91,33 @@ export default function UserList() {
   }, [pagination.page, pagination.pageSize, searchTerm]);
 
   // Toggle user status
-  const handleToggle = (id: number) => {
-    setUsers(prev => prev.map(u => u.orderId === id ? { ...u, status: !u.status } : u));
-  };
+// Toggle user status with API call
+const handleToggle = async (user: UserType) => {
+  try {
+    // Optimistically update UI
+    setUsers(prev => 
+      prev.map(u => u.user_id === user.user_id ? { ...u, status: !u.status } : u)
+    );
+
+    // Call API to block/unblock user
+    const payload = { user_id: user.user_id };
+    const data = await put("/admin/block-user", payload, "PUT");
+
+    if (!data.status) {
+      // If API fails, revert the change
+      setUsers(prev => 
+        prev.map(u => u.user_id === user.user_id ? { ...u, status: user.status } : u)
+      );
+      console.error("Failed to update status:", data.message);
+    }
+  } catch (err) {
+    // Revert change if error
+    setUsers(prev => 
+      prev.map(u => u.user_id === user.user_id ? { ...u, status: user.status } : u)
+    );
+    console.error("Error toggling user status:", err);
+  }
+};
 
   return (
     <div className="w-full bg-white text-[#111827] theme-container px-2 pt-4 pb-12">
@@ -164,13 +188,13 @@ export default function UserList() {
                       </span>
                     </td>
                     <td className="px-4 py-6 text-center">
-                      <button
-                        type="button"
-                        onClick={() => handleToggle(user.orderId)}
-                        className={`group relative inline-flex h-6 w-11 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${user.status ? "bg-brand-secondary" : "bg-gray-200"}`}
-                      >
-                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200 ease-in-out ${user.status ? "translate-x-5" : "translate-x-0"}`} />
-                      </button>
+                   <button
+  type="button"
+  onClick={() => handleToggle(user)}
+  className={`group relative inline-flex h-6 w-11 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${user.status ? "bg-brand-secondary" : "bg-gray-200"}`}
+>
+  <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200 ease-in-out ${user.status ? "translate-x-5" : "translate-x-0"}`} />
+</button>
                     </td>
                   </tr>
                 ))

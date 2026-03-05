@@ -1,5 +1,6 @@
 import { LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import Cookies from 'js-cookie';
 
 interface SignOutProps {
     onClose: () => void;
@@ -21,8 +22,6 @@ const handleLogout = () => {
   // Redirect to login
   navigate("/", { replace: true });
 
-  // Optional: reload app (extra safe)
-  // window.location.href = "/";
 };
 
     return (
@@ -45,7 +44,7 @@ const handleLogout = () => {
                         Cancel
                     </button>
                     <button 
-                        onClick={onConfirm}
+                        onClick={handleLogout}
                         className="flex-1 px-6 py-2.5 rounded-xl bg-brand-secondary text-white font-bold"
                     >
                         Sign Out

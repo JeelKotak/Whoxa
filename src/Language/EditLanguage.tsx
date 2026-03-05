@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
-import Modal from '../Components/Modal';
-import { InputButtonForm } from '../Components/InputButtonForm';
-import { RadioButtonsForm } from '../Components/RadioButtonForms';
-import { SubmitAndCancel } from '../Components/SubmitAndCancel';
-import ResizableSelect from '../Components/CustomSelectDropdown';
+import React, { useState } from "react";
+import Modal from "../Components/Modal";
+import { InputButtonForm } from "../Components/InputButtonForm";
+import { RadioButtonsForm } from "../Components/RadioButtonForms";
+import { SubmitAndCancel } from "../Components/SubmitAndCancel";
+import CountryList from "../Components/CountryList";
+import useApi from "../hooks/useApiPost";
 
 export interface LanguageData {
-  id: string;       
+  id: string;
   name: string;
-  direction: 'LTR' | 'RTL';
+  direction: "LTR" | "RTL";
   country: string;
-  status: 'Active' | 'Inactive';
-  isDefault: boolean; 
-  [key: string]: any; 
+  status: "Active" | "Inactive";
+  isDefault: boolean;
 }
 
 interface EditProps {
@@ -21,57 +21,72 @@ interface EditProps {
   onUpdate: (data: LanguageData) => void;
 }
 
-const EditLanguage: React.FC<EditProps> = ({ language, onClose, onUpdate }) => {
-  const [selectedCountry, setSelectedCountry] = useState(language.country);
+const EditLanguage: React.FC<EditProps> = ({
+  language,
+  onClose,
+  onUpdate,
+}) => {
+  const { post, loading } = useApi();
 
-  const countryOptions = [
-    'United States', 'India', 'China', 'Russia', 
-    'South Korea', 'United Kingdom', 'United Arab Emirates', 'France', 'Spain'
-  ];
+  const [country, setCountry] = useState(language.country);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    onUpdate({
-      ...language,
-      country: selectedCountry,
-    });
-    onClose();
+
+    try {
+      const res = await post("/admin/update-language", {
+        language_id: Number(language.id),
+        country: country,
+      });
+
+      if (res.status) {
+        const updatedData = {
+          ...language,
+          country,
+        };
+
+        onUpdate(updatedData);
+        onClose();
+      }
+    } catch (error) {
+      console.error("Failed to update language");
+    }
   };
 
   return (
     <Modal isOpen={true} onClose={onClose} title="Edit Language">
       <form onSubmit={handleSubmit} className="space-y-8">
         
-        {/* Language Name - Fixed */}
+        {/* Language Name */}
         <InputButtonForm
           label="Language"
           value={language.name}
-          onChange={() => {}} 
-          disabled={true}    
+          onChange={() => {}}
+          disabled
           placeholder="Language name"
         />
 
-        {/* Alignment - Fixed */}
+        {/* Alignment */}
         <RadioButtonsForm
           label="Language Alignment"
-          options={['LTR', 'RTL'] as const}
+          options={["LTR", "RTL"]}
           selectedValue={language.direction}
-          onChange={() => {}} 
+          onChange={() => {}}
         />
 
-        {/* Country Selection - Editable */}
-        <div className='flex items-center gap-2'>
-          <ResizableSelect
-            label='Country'
-            options={countryOptions}
-            value={selectedCountry}
-            onChange={(val) => setSelectedCountry(val)}
-          />
-        </div>
+        {/* Country */}
+        <CountryList
+          label="Country"
+          value={country}
+          onChange={setCountry}
+          required
+        />
 
-        {/* Action Buttons */}
-        <SubmitAndCancel onCancel={onClose} />
+        {/* Buttons */}
+        <SubmitAndCancel
+          onCancel={onClose}
+          loading={loading}
+        />
       </form>
     </Modal>
   );

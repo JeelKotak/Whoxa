@@ -29,7 +29,7 @@ const sizeStyles = {
 };
 
 const variantStyles = {
-  primary: "bg-indigo-500",
+  primary: "bg-brand-secondary",
   success: "bg-green-500",
   danger: "bg-red-500",
 };

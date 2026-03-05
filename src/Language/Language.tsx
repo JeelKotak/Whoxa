@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import useApi from "../hooks/useApiPost";
 import RowsPerPage from "../Components/RowsPerPage";
 import Pagination from "../Components/Pagination";
+import Toggle from "./Toggle";
 
 type LanguageData = {
   id: string;
@@ -79,15 +80,6 @@ export default function Language() {
     fetchLanguages(pagination.page, pagination.pageSize);
   }, [pagination.page, pagination.pageSize]);
 
-  // =============================
-  // HELPERS
-  // =============================
-  const setCurrentPage = (page: number) => {
-    setPagination((prev) => ({
-      ...prev,
-      page,
-    }));
-  };
 
   const filteredLanguages = useMemo(() => {
     if (!searchTerm) return languages;
@@ -100,6 +92,45 @@ export default function Language() {
   }, [languages, searchTerm]);
 
   const selectedLanguage = languages.find((l) => l.id === editingId);
+
+  const handleStatusToggle = async (id: string, value: boolean) => {
+    try {
+      await post("/admin/update-language", {
+        language_id: Number(id),
+        status: value,
+      });
+
+      setLanguages((prev) =>
+        prev.map((lang) =>
+          lang.id === id
+            ? { ...lang, status: value ? "Active" : "Inactive" }
+            : lang
+        )
+      );
+
+      fetchLanguages(pagination.page, pagination.pageSize); // Refresh list after status change
+    } catch (error) {
+      console.error("Failed to update status");
+    }
+  };
+
+  const handleDefaultToggle = async (id: string, value: boolean) => {
+    try {
+      await post("/admin/update-language", {
+        language_id: Number(id),
+        default_status: value,
+      });
+
+      setLanguages((prev) =>
+        prev.map((lang) =>
+          lang.id === id ? { ...lang, isDefault: value } : lang
+        )
+      );
+      fetchLanguages(pagination.page, pagination.pageSize); // Refresh list after default change
+    } catch (error) {
+      console.error("Failed to update default language");
+    }
+  };
 
   // =============================
   // UI
@@ -167,22 +198,16 @@ export default function Language() {
                       <td className="px-6 py-5">{lang.direction}</td>
 
                       <td className="px-6 py-5 text-center">
-                        <button
-                          className={`h-6 w-11 rounded-full ${
-                            lang.status === "Active"
-                              ? "bg-brand-secondary"
-                              : "bg-gray-300"
-                          }`}
+                        <Toggle
+                          enabled={lang.status === "Active"}
+                          onChange={(val) => handleStatusToggle(lang.id, val)}
                         />
                       </td>
 
                       <td className="px-6 py-5 text-center">
-                        <button
-                          className={`h-6 w-11 rounded-full ${
-                            lang.isDefault
-                              ? "bg-brand-secondary"
-                              : "bg-gray-300"
-                          }`}
+                        <Toggle
+                          enabled={lang.isDefault}
+                          onChange={(val) => handleDefaultToggle(lang.id, val)}
                         />
                       </td>
 
@@ -191,13 +216,15 @@ export default function Language() {
                           <SquarePen size={18} />
                         </button>
 
-                        <button
-                          onClick={() =>
-                            navigate("/translate-language")
-                          }
-                        >
-                          <Languages size={18} />
-                        </button>
+                       
+                       <button
+  onClick={() => {
+    localStorage.setItem("selectedLanguageId", lang.id);
+    navigate("/translate-language");
+  }}
+>
+  <Languages size={18} />
+</button>
                       </td>
                     </tr>
                   ))
@@ -216,30 +243,38 @@ export default function Language() {
         {/* ============================= */}
         {/* PAGINATION (YOUR EXACT UI) */}
         {/* ============================= */}
-           {/* Pagination */}
-      <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-4">
-        <RowsPerPage
-          page={pagination.page}
-          pageSize={pagination.pageSize}
-          total={pagination.total}
-          onChange={(newSize) => setPagination(prev => ({ ...prev, pageSize: newSize, page: 1 }))}
-        />
-        <Pagination
-          page={pagination.page}
-          totalPages={pagination.total_pages}
-          onPageChange={(newPage) => setPagination(prev => ({ ...prev, page: newPage }))}
-        />
-      </div>
+        {/* Pagination */}
+        <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-4">
+          <RowsPerPage
+            page={pagination.page}
+            pageSize={pagination.pageSize}
+            total={pagination.total}
+            onChange={(newSize) => setPagination(prev => ({ ...prev, pageSize: newSize, page: 1 }))}
+          />
+          <Pagination
+            page={pagination.page}
+            totalPages={pagination.total_pages}
+            onPageChange={(newPage) => setPagination(prev => ({ ...prev, page: newPage }))}
+          />
+        </div>
       </div>
 
       {isAddLanguageOpen && (
-        <AddLanguage onClose={() => setIsAddLanguageOpen(false)} />
+        <AddLanguage onClose={() => setIsAddLanguageOpen(false)} onSuccess={() => fetchLanguages(pagination.page, pagination.pageSize)}
+        />
       )}
 
       {editingId && selectedLanguage && (
         <EditLanguage
           language={selectedLanguage}
           onClose={() => setEditingId(null)}
+          onUpdate={(updated) => {
+            setLanguages((prev) =>
+              prev.map((lang) =>
+                lang.id === updated.id ? updated : lang
+              )
+            );
+          }}
         />
       )}
     </div>

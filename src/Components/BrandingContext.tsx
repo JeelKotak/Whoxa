@@ -13,7 +13,7 @@ const BrandingContext = createContext<BrandingContextType | undefined>(undefined
 
 export const BrandingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [logo, setLogo] = useState<string>(localStorage.getItem('siteLogo') || "./Images/Logo.png");
-    const [siteName, setSiteName] = useState<string>(localStorage.getItem('siteName') || "isomorphic");
+    const [siteName, setSiteName] = useState<string>(localStorage.getItem('siteName') || "Whoxa Admin");
 
     const updateLogo = (newLogo: string) => {
         setLogo(newLogo);

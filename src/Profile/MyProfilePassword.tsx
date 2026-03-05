@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { Eye, EyeOff } from 'lucide-react';
 import '../Components/_theme.scss';
+import useApi from '../hooks/useApiPost';
 
 export default function MyProfilePassword() {
     const [formData, setFormData] = useState({
@@ -14,22 +15,43 @@ export default function MyProfilePassword() {
     const [showNew, setShowNew] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
 
-    const handleCreate = () => {
-        const { currentPassword, newPassword, confirmPassword } = formData;
+   
 
-        if (!currentPassword || !newPassword || !confirmPassword) {
-            toast.error("Please fill in all mandatory fields.");
-            return;
+const { put, loading } = useApi();
+
+const handleCreate = async () => {
+    const { currentPassword, newPassword, confirmPassword } = formData;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        toast.error("Please fill in all mandatory fields.");
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        toast.error("New password and confirmation do not match.");
+        return;
+    }
+
+    try {
+        const payload = {
+            current_password: currentPassword,
+            password: newPassword,
+            confirm_password: confirmPassword
+        };
+
+        const res = await put('/admin/password', payload); // replace with your API endpoint
+
+        if (res?.data?.status) {
+            toast.success("Password updated successfully!");
+            setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        } else {
+            toast.error(res?.data?.message || "Something went wrong");
         }
 
-        if (newPassword !== confirmPassword) {
-            toast.error("New password and confirmation do not match.");
-            return;
-        }
-
-        toast.success("Password updated successfully!");
-        console.log("Submit Data:", formData);
-    };
+    } catch (err: any) {
+        toast.error(err?.response?.data?.message || "Failed to update password");
+    }
+};
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;

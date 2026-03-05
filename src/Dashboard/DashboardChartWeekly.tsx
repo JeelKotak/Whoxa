@@ -59,7 +59,7 @@ const DashboardChartWeekly = () => {
                       width: `${(item.count / maxCount) * 100}%`,
                     }}
                   >
-                    {item.count}
+                    {item.count} 
                   </div>
                 )}
               </div>

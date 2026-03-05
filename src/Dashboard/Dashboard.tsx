@@ -11,8 +11,75 @@ import DashboardChartYearlyLast from "./DashboardChartYearlyLast";
 import useDashboardStats from "../hooks/useDashboardStats";
 import { calculateTrend } from "../utils/calculateTrend";
 import DashboardStatCardSkeleton from "./DashboardStatCardSkeleton";
+import { useCallback, useEffect, useState } from "react";
+import useApi from "../hooks/useApiPost";
+
+interface ConfigType {
+  app_name: string;
+  app_email: string;
+  app_primary_color: string;
+  app_logo_light: string;
+  web_logo_light: string;
+  app_logo_dark: string;
+  copyright_text: string;
+}
 
 export default function Dashboard() {
+
+
+    const { get, } = useApi();
+
+  const [config, setConfig] = useState<ConfigType | null>(null);
+
+  const [themeColor, setThemeColor] = useState("#EAB308");
+
+ 
+
+
+
+  /* ============================= */
+  /* 🔹 Fetch Config */
+  /* ============================= */
+
+  const fetchConfig = useCallback(async () => {
+    try {
+      const res = await get("/config/");
+      if (res?.status) {
+        setConfig(res.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch config", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchConfig();
+  }, [fetchConfig]);
+
+  /* ============================= */
+  /* 🔹 Sync API Data */
+  /* ============================= */
+
+  useEffect(() => {
+    if (!config) return;
+    setThemeColor(config.app_primary_color || "#EAB308");
+   
+  }, [config]);
+
+  /* ============================= */
+  /* 🔹 Branding Sync */
+  /* ============================= */
+
+  useEffect(() => {
+    const root = document.documentElement;
+
+    root.style.setProperty("--brand-primary", themeColor);
+    root.style.setProperty("--brand-secondary", themeColor);
+    root.style.setProperty("--sidebar-active-bg", `${themeColor}1a`);
+
+  }, [themeColor,]);
+
+
 
 const { stats, loading } = useDashboardStats();
 

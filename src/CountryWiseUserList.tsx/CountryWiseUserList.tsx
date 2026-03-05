@@ -23,7 +23,9 @@ export default function CountryWiseUserList() {
       try {
         const response = await get('/admin/users-cnt-country-wise');
 
-        if (response.status && response.data) {
+        console.log('API Response:', response); // Debug log
+
+        if (response.data) {
           // Map API response to CountryData type
           const mappedData: CountryData[] = response.data.map((item: any) => {
             // Handle South Korea special case
@@ -344,7 +346,7 @@ const getCountryCode = (countryName: string) => {
                     {country.desktopUsers + country.mobileUsers}
                   </span>
                   <span className="text-[10px] text-gray-400 font-bold uppercase">
-                    Users
+                    Users 
                   </span>
                 </div>
               </div>

@@ -29,14 +29,9 @@ const AddReportType: React.FC<AddReportTypeProps> = ({ onClose }) => {
     };
 
     const res = await post("/report/add-reports", payload);
-
-    if (res.success) {
       toast.success("Report type added successfully!");
       onClose();
-    } else {
-      // Show the error message returned by the API
-      toast.error(res.message || "Failed to add report type");
-    }
+   
   } catch (err: any) {
     console.error("Error adding report type:", err);
     // err.response?.data?.message can be used if your post hook returns axios error

@@ -1,59 +1,78 @@
-import React, { useState } from 'react';
-import Modal from '../Components/Modal';
-import { InputButtonForm } from '../Components/InputButtonForm';
-import { RadioButtonsForm } from '../Components/RadioButtonForms';
-import { SubmitAndCancel } from '../Components/SubmitAndCancel';
-import ResizableSelect from '../Components/CustomSelectDropdown';
+import React, { useState } from "react";
+import Modal from "../Components/Modal";
+import { InputButtonForm } from "../Components/InputButtonForm";
+import { RadioButtonsForm } from "../Components/RadioButtonForms";
+import { SubmitAndCancel } from "../Components/SubmitAndCancel";
+import useApi from "../hooks/useApiPost";
+import CountryList from "../Components/CountryList";
 
 interface AddLanguageProps {
   onClose: () => void;
+  onSuccess: () => void;
 }
 
-const AddLanguage: React.FC<AddLanguageProps> = ({ onClose }) => {
-  const [languageName, setLanguageName] = useState('');
-  const [alignment, setAlignment] = useState<'LTR' | 'RTL'>('LTR');
-  const [selectedCountry, setSelectedCounrty] = useState('United State of America');
-  const countryOptions = ['United State of America', 'India', 'China', 'Russia','South Korea'];
+const AddLanguage: React.FC<AddLanguageProps> = ({ onClose, onSuccess }) => {
+  const { post, loading } = useApi();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [language, setLanguage] = useState("");
+  const [alignment, setAlignment] = useState<"LTR" | "RTL">("LTR");
+  const [country, setCountry] = useState<string>("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log({ languageName, alignment, country: selectedCountry });
-    onClose();
+
+    const payload = {
+      language,
+      language_alignment: alignment,
+      country,
+    };
+
+    try {
+      await post("/admin/add-language", payload);
+      onClose();
+            onSuccess();   // 🔥 Refresh language list
+
+    } catch (error) {
+      console.error("Add Language Error:", error);
+    }
   };
 
   return (
     <Modal isOpen={true} onClose={onClose} title="Add Language">
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-6">
 
-        {/* Language Name Input */}
+        {/* Language */}
         <InputButtonForm
           label="Language"
-          value={languageName}
-          onChange={setLanguageName}
+          value={language}
+          onChange={setLanguage}
           placeholder="e.g. Hindi"
           required
         />
 
-        {/* Alignment Radio Selection */}
+        {/* Alignment */}
         <RadioButtonsForm
           label="Language Alignment"
-          options={['LTR', 'RTL'] as const}
+          options={["LTR", "RTL"] as const}
           selectedValue={alignment}
-          onChange={(val) => setAlignment(val as 'LTR' | 'RTL')}
+          onChange={(val) => setAlignment(val as "LTR" | "RTL")}
           required
         />
 
-        <div className='flex items-center gap-2'>
-          <ResizableSelect
-            label='Country'
-            options={countryOptions}
-            value={selectedCountry}
-            onChange={(val) => setSelectedCounrty(val)}
-          />
-        </div>
+        {/* Country */}
+        <CountryList
+          label="Country"
+          value={country}
+          onChange={setCountry}
+          required
+        />
 
-        {/* Action Buttons */}
-        <SubmitAndCancel onCancel={onClose} />
+        {/* Buttons */}
+        <SubmitAndCancel
+          onCancel={onClose}
+          loading={loading}
+        />
+
       </form>
     </Modal>
   );
